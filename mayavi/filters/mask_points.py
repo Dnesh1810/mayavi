@@ -17,10 +17,10 @@ from mayavi.core.pipeline_info import PipelineInfo
 ######################################################################
 class MaskPoints(FilterBase):
 
-    """Selectively passes the input points downstream.  This can be
-    used to subsample the input points.  Note that this does not pass
-    geometry data, this means all grid information is lost.
-    """
+ """Selectively passes input points downstream to subsample the data.
+Note that this does not pass geometry data, so all grid information
+is lost.
+"""
 
     # The version of this class.  Used for persistence.
     __version__ = 0
