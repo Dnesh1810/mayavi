@@ -4,13 +4,17 @@ pipeline {
     stages {
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        sonar-scanner \
-                          -Dsonar.projectKey=mayavi \
-                          -Dsonar.sources=mayavi \
-                          -Dsonar.projectName=Mayavi
-                    '''
+                script {
+                    def scannerHome = tool 'SonarScanner'
+
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                              -Dsonar.projectKey=mayavi \
+                              -Dsonar.sources=mayavi \
+                              -Dsonar.projectName=Mayavi
+                        """
+                    }
                 }
             }
         }
