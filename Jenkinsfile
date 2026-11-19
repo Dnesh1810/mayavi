@@ -2,6 +2,29 @@ pipeline {
     agent any
 
     stages {
+	stage('Test Hadoop Connection') {
+    steps {
+        withCredentials([
+            file(credentialsId: 'hadoop-kubeconfig',
+                 variable: 'KUBECONFIG')
+        ]) {
+            sh '''
+                set -eu
+
+                echo "Installing Kubernetes CLI..."
+                curl -fsSL \
+                  https://dl.k8s.io/release/v1.34.1/bin/linux/amd64/kubectl \
+                  -o kubectl
+                chmod +x kubectl
+
+                echo "Connecting to Hadoop cluster..."
+                ./kubectl get pods -n hadoop
+
+                echo "HADOOP CONNECTION SUCCESSFUL"
+            '''
+        }
+    }
+}
         stage('SonarQube Analysis') {
             steps {
                 script {
