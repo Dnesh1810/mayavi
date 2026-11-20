@@ -39,6 +39,7 @@ pipeline {
                     def scannerHome = tool 'SonarScanner'
                     def scanKey = params.DEMO_CLEAN ? 'mayavi-clean-demo' : 'mayavi'
                     def scanSources = params.DEMO_CLEAN ? 'ci/clean_demo' : 'mayavi'
+                    def scanName = params.DEMO_CLEAN ? 'Mayavi Clean Demo' : 'Mayavi'
                     env.SCAN_KEY = scanKey
                     echo "Scanning project: ${scanKey}" 
 
@@ -47,7 +48,7 @@ pipeline {
                             ${scannerHome}/bin/sonar-scanner \
                               -Dsonar.projectKey=${scanKey} \
                               -Dsonar.sources=${scanSources} \
-                              -Dsonar.projectName=Mayavi
+                              -Dsonar.projectName=${scanName}
                         """
                     }
                 }
