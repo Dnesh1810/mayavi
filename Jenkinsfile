@@ -1,6 +1,14 @@
 pipeline {
     agent any
 
+    parameters {
+        booleanParam(
+            name: 'DEMO_CLEAN',
+            defaultValue: false,
+            description: 'Demo only: scan clean sample instead of Mayavi'
+        )
+    }
+
     stages {
 	stage('Test Hadoop Connection') {
     steps {
@@ -29,12 +37,16 @@ pipeline {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
+                    def scanKey = params.DEMO_CLEAN ? 'mayavi-clean-demo' : 'mayavi'
+                    def scanSources = params.DEMO_CLEAN ? 'ci/clean_demo' : 'mayavi'
+                    env.SCAN_KEY = scanKey
+                    echo "Scanning project: ${scanKey}" 
 
                     withSonarQubeEnv('SonarQube') {
                         sh """
                             ${scannerHome}/bin/sonar-scanner \
-                              -Dsonar.projectKey=mayavi \
-                              -Dsonar.sources=mayavi \
+                              -Dsonar.projectKey=${scanKey} \
+                              -Dsonar.sources=${scanSources} \
                               -Dsonar.projectName=Mayavi
                         """
                     }
@@ -104,7 +116,7 @@ pipeline {
                         def issuesJson = sh(
                             script: """
                                 curl -fsS -u "\$SONAR_TOKEN:" \
-                                "${sonarUrl}/api/issues/search?componentKeys=mayavi&resolved=false&severities=MAJOR%2CCRITICAL%2CBLOCKER&ps=1"
+                                "${sonarUrl}/api/issues/search?componentKeys=${env.SCAN_KEY}&resolved=false&severities=MAJOR%2CCRITICAL%2CBLOCKER&ps=1"
                             """,
                             returnStdout: true
                         ).trim()
