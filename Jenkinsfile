@@ -125,5 +125,44 @@ pipeline {
                 }
             }
         }
+
+        stage('Run Hadoop MapReduce') {
+            steps {
+                withCredentials([
+                    file(credentialsId: 'hadoop-kubeconfig',
+                         variable: 'KUBECONFIG')
+                ]) {
+                    sh '''
+                        set -eu
+
+                        MASTER=$(./kubectl get pods -n hadoop                           -l app=hadoop-master                           -o jsonpath='{.items[0].metadata.name}')
+
+                        echo "Preparing Hadoop job on $MASTER"
+
+                        ./kubectl cp ci/mapper.py                           "hadoop/$MASTER:/tmp/mapper.py" -c namenode
+                        ./kubectl cp ci/reducer.py                           "hadoop/$MASTER:/tmp/reducer.py" -c namenode
+
+                        ./kubectl cp mayavi/filters/mask_points.py                           "hadoop/$MASTER:/tmp/mask_points.py" -c namenode
+                        ./kubectl cp mayavi/filters/filter_base.py                           "hadoop/$MASTER:/tmp/filter_base.py" -c namenode
+
+                        ./kubectl exec -n hadoop "$MASTER" -c namenode --                           hdfs dfs -mkdir -p /input-jenkins
+
+                        for FILE in mask_points.py filter_base.py; do
+                          ./kubectl exec -n hadoop "$MASTER" -c namenode --                             hdfs dfs -put -f "/tmp/$FILE" /input-jenkins/
+                        done
+
+                        ./kubectl exec -n hadoop "$MASTER" -c namenode --                           hdfs dfs -rm -r -f /output-jenkins || true
+
+                        ./kubectl exec -n hadoop "$MASTER" -c namenode --                           hadoop jar                           /opt/hadoop/share/hadoop/tools/lib/hadoop-streaming-3.4.2.jar                           -D mapreduce.job.name=JenkinsMayaviLineCount                           -D mapreduce.job.reduces=1                           -files /tmp/mapper.py,/tmp/reducer.py                           -mapper "python mapper.py"                           -reducer "python reducer.py"                           -input /input-jenkins                           -output /output-jenkins
+
+                        echo "HADOOP MAPREDUCE RESULTS:"
+                        ./kubectl exec -n hadoop "$MASTER" -c namenode --                           hdfs dfs -cat /output-jenkins/part-00000
+
+                        echo "HADOOP MAPREDUCE SUCCESSFUL"
+                    '''
+                }
+            }
+        }
+
     }
 }
